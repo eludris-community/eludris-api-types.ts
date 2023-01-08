@@ -1,0 +1,8 @@
+
+*.js
+*.mjs
+*.d.ts
+*.*map
+node_modules
+
+yarn-error.log
