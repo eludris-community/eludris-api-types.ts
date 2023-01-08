@@ -1,6 +1,6 @@
 {
   "name": "eludris-api-types",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "teaishealthy",
   "license": "MIT",
   "exports": {
@@ -34,5 +34,7 @@
     "esm:oprish": "gen-esm-wrapper oprish/index.js oprish/index.mjs",
     "esm:effis": "gen-esm-wrapper effis/index.js effis/index.mjs"
   },
-  "files": ["{pandemonium,oprish,effis}/*.{js,mjs,d.ts,*map}"]
+  "files": [
+    "{pandemonium,oprish,effis}/*.{js,mjs,d.ts,*map}"
+  ]
 }
