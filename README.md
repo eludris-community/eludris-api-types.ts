@@ -1,4 +1,4 @@
-# Discord API Types
+# Eludris API Types
 
 [![GitHub](https://img.shields.io/github/license/eludris-community/eludris-api-types?style=flat-square)](https://github.com/eludris-community/eludris-api-types/blob/main/LICENSE.md)
 [![npm](https://img.shields.io/npm/v/eludris-api-types?color=crimson&logo=npm&style=flat-square)](https://www.npmjs.com/package/eludris-api-types)
