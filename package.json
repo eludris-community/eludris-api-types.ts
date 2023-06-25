@@ -1,12 +1,12 @@
 {
   "name": "eludris-api-types",
-  "version": "0.2.0",
+  "version": "0.2.1-2",
   "author": "teaishealthy",
   "license": "MIT",
   "exports": {
-    "v0.3.3": {
+    "./v0.3.3": {
       "import": "./dist/v0.3.3.mjs",
-      "require": "./pandemonium/v0.3.3.js",
+      "require": "./dist/v0.3.3.js",
       "types": "./dist/v0.3.3.d.ts"
     }
   },
@@ -23,6 +23,6 @@
     "build": "tsc && find dist -type f -name \"*.js\" | xargs -I {} gen-esm-wrapper {} {}.mjs"
   },
   "files": [
-    "0.3.3/*.{js,mjs,d.ts,*map}"
+    "dist"
   ]
 }
