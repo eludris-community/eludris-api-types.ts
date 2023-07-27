@@ -23,6 +23,7 @@ const converters: Map<RegExp, (str: string) => string> = new Map([
   [/^TempFile$/, (_) => "unknown"],
   [/^Box<.*>/, (str) => convertType(str.replace(/^Box<(.+)>$/, "$1"))],
   [/^IpAddr$/, (_) => "string"],
+  [/^Vec<.*>/, (str) => convertType(str.replace(/^Vec<(.+)>$/, "$1[]"))],
 ]);
 
 function switchCase(content: string, newCase: string | null): string {
