@@ -95,7 +95,8 @@ async function buildTypes(fh: FileHandle, typeUrl: string, routes: string[]) {
 async function handleEnum(fh: FileHandle, info: ItemInfo<EnumInfo>) {
   await fh.write(
     `export type ${info.name} = ${
-      info.item.variants.map((v) => `${info.name}${v.name}`).join(" | ") || "never"
+      info.item.variants.map((v) => `${info.name}${v.name}`).join(" | ") ||
+      "never"
     }\n`
   );
 
@@ -109,7 +110,8 @@ async function handleEnumVariant(
   variant: EnumVariant,
   info: ItemInfo<EnumInfo>
 ): Promise<string[]> {
-  const {item, name} = info;
+  const { item, name } = info;
+  console.log("content", item.content, variant.name);
   let typeStr = "";
   let doc = "";
   let bases: string[] = [];
@@ -147,12 +149,19 @@ async function handleEnumVariant(
       variant.name,
       item.rename_all
     )}"\n`;
+
+    if (item.content) {
+      typeStr += `  ${item.content}: {\n`;
+    }
     for (const field of variant.fields) {
       if (field.flattened) {
         bases.push(convertType(field.field_type));
       } else {
         typeStr += fieldToType(field) + "\n";
       }
+    }
+    if (item.content) {
+      typeStr += "  }\n";
     }
   }
   typeStr += "}";
@@ -161,7 +170,8 @@ async function handleEnumVariant(
     basesStr = ` extends ${basesStr}`;
   }
 
-  typeStr = `${doc}\nexport interface ${name}${variant.name}${basesStr} {\n` + typeStr;
+  typeStr =
+    `${doc}\nexport interface ${name}${variant.name}${basesStr} {\n` + typeStr;
   await fh.write(typeStr + "\n");
 
   return bases;
@@ -172,12 +182,17 @@ async function handleStruct(fh: FileHandle, info: ItemInfo<StructInfo>) {
   if (info.doc) {
     doc = `/** ${convertDoc(info.doc)} */\n`;
   }
-  let typeStr = `${doc}export interface ${info.name} {\n`;
-  typeStr += info.item.fields
-    .map((field) => indent(fieldToType(field), 2))
-    .join("\n");
-  typeStr += "\n}";
-  await fh.write(typeStr + "\n");
+  let bases: string[] = [];
+  let typeStr = '{\n';
+  for (const field of info.item.fields) {
+    if (field.flattened) {
+      bases.push(convertType(field.field_type));
+    } else {
+      typeStr += fieldToType(field) + "\n";
+    }
+  }
+
+  await fh.write(`${doc}export interface ${info.name}${ bases.length ? " extends" : "" } ${bases.join(", ")} ${typeStr}}\n`);
 }
 
 async function main(inventoryIndex: string, output: string) {

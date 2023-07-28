@@ -17,6 +17,229 @@ export interface FileUpload {
   file: unknown;
   spoiler: boolean;
 }
+/** Represents a single rate limit.
+
+-----
+
+### Example
+
+```json
+{
+  "reset_after": 60,
+  "limit": 30
+}
+``` */
+export interface RateLimitConf {
+  /** The amount of seconds after which the rate limit resets. */
+  reset_after: number;
+  /** The amount of requests that can be made within the `reset_after` interval. */
+  limit: number;
+}
+/** The UserCreate payload.
+
+This is used when a user is initially first created. For authentication payloads check
+{@link SessionCreate}.
+
+-----
+
+### Example
+
+```json
+{
+  "username": "yendri",d
+  "email": "yendri@llamoyendri.io",
+  "password": "authentícame por favor" // don't actually use this as a password
+}
+``` */
+export interface UserCreate {
+  /** The user's name.
+
+This is different to their `display_name` as it denotes how they're more formally
+referenced by the API. */
+  username: string;
+  /** The user's email. */
+  email: string;
+  /** The user's password. */
+  password: string;
+}
+/** Represents a single rate limit for Effis.
+
+-----
+
+### Example
+
+```json
+{
+  "reset_after": 60,
+  "limit": 5,
+  "file_size_limit": 30000000
+}
+``` */
+export interface EffisRateLimitConf {
+  /** The amount of seconds after which the rate limit resets. */
+  reset_after: number;
+  /** The amount of requests that can be made within the `reset_after` interval. */
+  limit: number;
+  /** The maximum amount of bytes that can be sent within the `reset_after` interval. */
+  file_size_limit: number;
+}
+/** The UpdateUser payload. Any field set to `null`, `undefined` or is missing will be disregarded
+and won't affect the user.
+
+-----
+
+### Example
+
+```json
+{
+  "password": "authentícame por favor",
+  "username": "yendli",
+  "email": "yendli2@yemail.yom"
+}
+``` */
+export interface UpdateUser {
+  /** The user's current password for validation. */
+  password: string;
+  /** The user's new username. */
+  username?: string | null;
+  /** The user's new email. */
+  email?: string | null;
+  /** The user's new password. */
+  new_password?: string | null;
+}
+export type StatusType =
+  | StatusTypeOnline
+  | StatusTypeOffline
+  | StatusTypeIdle
+  | StatusTypeBusy;
+/** The session payload.
+
+The user should ideally have one session for every client they have on every device.
+
+-----
+
+### Example
+
+```json
+{
+  "id": 2312155037697,
+  "user_id": 2312155693057,
+  "platform": "linux",
+  "client": "pilfer"
+}
+``` */
+export interface Session {
+  /** The session's ID. */
+  id: number;
+  /** The session user's ID. */
+  user_id: number;
+  /** The session's platform (linux, windows, mac, etc.) */
+  platform: string;
+  /** The client the session was created by. */
+  client: string;
+  /** The session's creation IP address. */
+  ip: string;
+}
+/** The CreatePasswordResetCode payload. This is used when a user wants to generate a code
+to reset their password, most commonly because they forgot their old one.
+
+-----
+
+### Example
+
+```json
+{
+  "email": "someemail@ma.il"
+}
+``` */
+export interface CreatePasswordResetCode {
+  /** The user's email. */
+  email: string;
+}
+/** A temporary way to mask the message's author's name and avatar. This is mainly used for
+bridging and will be removed when webhooks are officially supported.
+
+-----
+
+### Example
+
+```json
+{
+  "name": "Jeff",
+  "avatar": "https://some-u.rl/to/some-image.png"
+}
+``` */
+export interface MessageDisguise {
+  /** The name of the message's disguise. */
+  name: string | null;
+  /** The URL of the message's disguise. */
+  avatar: string | null;
+}
+/** The SessionCreate payload.
+
+This is used to authenticate a user and obtain a token to interface with the API.
+
+-----
+
+### Example
+
+```json
+{
+  "identifier": "yendri",
+  "password": "authentícame por favor",
+  "platform": "linux",
+  "client": "pilfer"
+}
+``` */
+export interface SessionCreate {
+  /** The session user's identifier. This can be either their email or username. */
+  identifier: string;
+  /** The session user's password. */
+  password: string;
+  /** The session's platform (linux, windows, mac, etc.) */
+  platform: string;
+  /** The client the session was created by. */
+  client: string;
+}
+
+export interface StatusTypeOnline {}
+
+export interface StatusTypeOffline {}
+
+export interface StatusTypeIdle {}
+
+export interface StatusTypeBusy {}
+/** Represents a file stored on Effis.
+
+-----
+
+### Example
+
+```json
+{
+  "id": 2195354353667,
+  "name": "das_ding.png",
+  "bucket": "attachments",
+  "metadata": {
+    "type": "IMAGE",
+    "width": 1600,
+    "height": 1600
+  }
+}
+``` */
+export interface FileData {
+  /** The file's ID. */
+  id: number;
+  /** The file's name. */
+  name: string;
+  /** The bucket the file is stored in. */
+  bucket: string;
+  /** Whether the file is marked as a spoiler. */
+  spoiler?: boolean;
+  /** The {@link FileMetadata} of the file. */
+  metadata: FileMetadata;
+}
+export type ClientPayload = ClientPayloadPing | ClientPayloadAuthenticate;
 /** The MessageCreate payload. This is used when you want to create a message using the REST API.
 
 -----
@@ -30,13 +253,287 @@ export interface FileUpload {
 ``` */
 export interface MessageCreate {
   /** The message's content. This field has to be at-least 2 characters long. The upper limit
-  is the instance's {@link InstanceInfo} `message_limit`.
+is the instance's {@link InstanceInfo} `message_limit`.
 
-  The content will be trimmed from leading and trailing whitespace. */
+The content will be trimmed from leading and trailing whitespace. */
   content: string;
   _disguise?: MessageDisguise | null;
 }
-export type ClientPayload = ClientPayloadPing | ClientPayloadAuthenticate;
+/** Represents all rate limits that apply to the connected Eludris instance.
+
+-----
+
+### Example
+```json
+{
+  "oprish": {
+    "info": {
+      "reset_after": 5,
+      "limit": 2
+    },
+    "message_create": {
+      "reset_after": 5,
+      "limit": 10
+    },
+    "rate_limits": {
+      "reset_after": 5,
+      "limit": 2
+    }
+  },
+  "pandemonium": {
+    "reset_after": 10,
+    "limit": 5
+  },
+  "effis": {
+    "assets": {
+      "reset_after": 60,
+      "limit": 5,
+      "file_size_limit": 30000000
+    },
+    "attachments": {
+      "reset_after": 180,
+      "limit": 20,
+      "file_size_limit": 500000000
+    },
+    "fetch_file": {
+      "reset_after": 60,
+      "limit": 30
+    }
+  }
+}
+``` */
+export interface InstanceRateLimits {
+  /** The instance's Oprish rate limit information (The REST API). */
+  oprish: OprishRateLimits;
+  /** The instance's Pandemonium rate limit information (The WebSocket API). */
+  pandemonium: RateLimitConf;
+  /** The instance's Effis rate limit information (The CDN). */
+  effis: EffisRateLimits;
+}
+export type FileMetadata =
+  | FileMetadataText
+  | FileMetadataImage
+  | FileMetadataVideo
+  | FileMetadataOther;
+/** The UpdateUserProfile payload. This payload is used to update a user's profile. The abscence of a
+field or it being `undefined` means that it won't have an effect. Explicitly setting a field as
+`null` will clear it.
+
+-----
+
+### Example
+
+```json
+{
+  "display_name": "HappyRu",
+  "bio": "I am very happy!"
+}
+``` */
+export interface UpdateUserProfile {
+  /** The user's new display name. This field has to be between 2 and 32 characters long. */
+  display_name?: string | null | null;
+  /** The user's new status. This field cannot be more than 150 characters long. */
+  status?: string | null | null;
+  /** The user's new status type. This must be one of `ONLINE`, `OFFLINE`, `IDLE` and `BUSY`. */
+  status_type?: StatusType | null;
+  /** The user's new bio. The upper limit is the instance's {@link InstanceInfo} `bio_limit`. */
+  bio?: string | null | null;
+  /** The user's new avatar. This field has to be a valid file ID in the "avatar" bucket. */
+  avatar?: number | null | null;
+  /** The user's new banner. This field has to be a valid file ID in the "banner" bucket. */
+  banner?: number | null | null;
+}
+/** The Message payload. This is returned when you're provided information about a pre-existing
+message.
+
+-----
+
+### Example
+
+```json
+{
+  "author": {
+     "id": 48615849987333,
+     "username": "mlynar",
+     "social_credit": 9999.
+     "badges": 256,
+     "permissions": 8
+  }
+  "content": "Hello, World!"
+}
+``` */
+export interface Message extends MessageCreate {
+  /** The message's author. */
+  author: User;
+}
+/** A user's status.
+
+-----
+
+### Example
+
+```json
+{
+  "type": "BUSY",
+  "text": "ayúdame por favor",
+}
+``` */
+export interface Status {
+  type: StatusType;
+  text?: string | null;
+}
+/** The response to a {@link SessionCreate}.
+
+-----
+
+### Example
+
+```json
+{
+  "token": "",
+  "session": {
+    "indentifier": "yendri",
+    "password": "authentícame por favor",
+    "platform": "linux",
+    "client": "pilfer"
+  }
+}
+``` */
+export interface SessionCreated {
+  /** The session's token. This can be used by the user to properly interface with the API. */
+  token: string;
+  /** The session object that was created. */
+  session: Session;
+}
+/** The ResetPassword payload. This is used when the user wants to reset their password using a
+password reset code.
+
+-----
+
+### Example
+
+```json
+{
+  "code": 234567,
+  "email": "someemail@ma.il",
+  "password": "wow such security"
+}
+``` */
+export interface ResetPassword {
+  /** The password reset code the user got emailed. */
+  code: number;
+  /** The user's email. */
+  email: string;
+  /** The user's new password. */
+  password: string;
+}
+/** The DeleteCredentials payload. This is used in multiple places in the API to provide extra
+credentials for deleting important user-related stuff.
+
+-----
+
+### Example
+
+```json
+{
+  "password": "wowsuchpassword"
+}
+``` */
+export interface PasswordDeleteCredentials {
+  password: string;
+}
+/** Represents information about the connected Eludris instance.
+
+-----
+
+### Example
+
+```json
+{
+  "instance_name": "eludris",
+  "description": "The *almost* official Eludris instance - ooliver.",
+  "version": "0.3.2",
+  "message_limit": 2000,
+  "oprish_url": "https://api.eludris.gay",
+  "pandemonium_url": "wss://ws.eludris.gay/",
+  "effis_url": "https://cdn.eludris.gay",
+  "file_size": 20000000,
+  "attachment_file_size": 25000000,
+  "rate_limits": {
+    "oprish": {
+      "info": {
+        "reset_after": 5,
+        "limit": 2
+      },
+      "message_create": {
+        "reset_after": 5,
+        "limit": 10
+      },
+      "rate_limits": {
+        "reset_after": 5,
+        "limit": 2
+      }
+    },
+    "pandemonium": {
+      "reset_after": 10,
+      "limit": 5
+    },
+    "effis": {
+      "assets": {
+        "reset_after": 60,
+        "limit": 5,
+        "file_size_limit": 30000000
+      },
+      "attachments": {
+        "reset_after": 180,
+        "limit": 20,
+        "file_size_limit": 500000000
+      },
+      "fetch_file": {
+        "reset_after": 60,
+        "limit": 30
+      }
+    }
+  }
+}
+``` */
+export interface InstanceInfo {
+  /** The instance's name. */
+  instance_name: string;
+  /** The instance's description.
+
+This is between 1 and 2048 characters long. */
+  description: string | null;
+  /** The instance's Eludris version. */
+  version: string;
+  /** The maximum length of a message's content. */
+  message_limit: number;
+  /** The URL of the instance's Oprish (REST API) endpoint. */
+  oprish_url: string;
+  /** The URL of the instance's Pandemonium (WebSocket API) endpoint. */
+  pandemonium_url: string;
+  /** The URL of the instance's Effis (CDN) endpoint. */
+  effis_url: string;
+  /** The maximum file size (in bytes) of an asset. */
+  file_size: number;
+  /** The maximum file size (in bytes) of an attachment. */
+  attachment_file_size: number;
+  /** The instance's email address if any. */
+  email_address?: string | null;
+  /** The rate limits that apply to the connected Eludris instance.
+
+This is not present if the `rate_limits` query parameter is not set. */
+  rate_limits?: InstanceRateLimits | null;
+}
+export type ErrorResponse =
+  | ErrorResponseUnauthorized
+  | ErrorResponseForbidden
+  | ErrorResponseNotFound
+  | ErrorResponseConflict
+  | ErrorResponseMisdirected
+  | ErrorResponseValidation
+  | ErrorResponseRateLimited
+  | ErrorResponseServer;
 /** The payload the client is supposed to periodically send the server to not get disconnected.
 
 The interval where these pings are supposed to be sent can be found in the `HELLO` payload
@@ -78,165 +575,45 @@ export interface ClientPayloadAuthenticate {
   op: "AUTHENTICATE";
   d: string;
 }
-/** Represents a single rate limit.
 
------
-
-### Example
-
-```json
-{
-  "reset_after": 60,
-  "limit": 30
+export interface FileMetadataText {
+  type: "Text";
 }
-``` */
-export interface RateLimitConf {
-  /** The amount of seconds after which the rate limit resets. */
-  reset_after: number;
-  /** The amount of requests that can be made within the `reset_after` interval. */
-  limit: number;
+
+export interface FileMetadataImage {
+  type: "Image";
+  /** The image's width in pixels. */
+  width?: number | null;
+  /** The image's height in pixels. */
+  height?: number | null;
 }
-export type ErrorResponse =
-  | ErrorResponseUnauthorized
-  | ErrorResponseForbidden
-  | ErrorResponseNotFound
-  | ErrorResponseConflict
-  | ErrorResponseMisdirected
-  | ErrorResponseValidation
-  | ErrorResponseRateLimited
-  | ErrorResponseServer;
-export type StatusType =
-  | StatusTypeOnline
-  | StatusTypeOffline
-  | StatusTypeIdle
-  | StatusTypeBusy;
-/** The UserCreate payload.
 
-This is used when a user is initially first created. For authentication payloads check
-{@link SessionCreate}.
-
------
-
-### Example
-
-```json
-{
-  "username": "yendri",d
-  "email": "yendri@llamoyendri.io",
-  "password": "authentícame por favor" // don't actually use this as a password
+export interface FileMetadataVideo {
+  type: "Video";
+  /** The video's width in pixels. */
+  width?: number | null;
+  /** The video's height in pixels. */
+  height?: number | null;
 }
-``` */
-export interface UserCreate {
-  /** The user's name.
 
-  This is different to their `display_name` as it denotes how they're more formally
-  referenced by the API. */
-  username: string;
-  /** The user's email. */
-  email: string;
-  /** The user's password. */
-  password: string;
+export interface FileMetadataOther {
+  type: "Other";
 }
-/** The session payload.
-
-The user should ideally have one session for every client they have on every device.
-
------
-
-### Example
-
-```json
-{
-  "id": 2312155037697,
-  "user_id": 2312155693057,
-  "platform": "linux",
-  "client": "pilfer"
+/** Shared fields between all error response variants. */
+export interface SharedErrorData {
+  /** The HTTP status of the error. */
+  status: number;
+  /** A brief explanation of the error. */
+  message: string;
 }
-``` */
-export interface Session {
-  /** The session's ID. */
-  id: number;
-  /** The session user's ID. */
-  user_id: number;
-  /** The session's platform (linux, windows, mac, etc.) */
-  platform: string;
-  /** The client the session was created by. */
-  client: string;
-  /** The session's creation IP address. */
-  ip: string;
-}
-/** The Message payload. This is returned when you're provided information about a pre-existing
-message.
-
------
-
-### Example
-
-```json
-{
-  "author": {
-     "id": 48615849987333,
-     "username": "mlynar",
-     "social_credit": 9999.
-     "badges": 256,
-     "permissions": 8
-  }
-  "content": "Hello, World!"
-}
-``` */
-export interface Message {
-  /** The message's author. */
-  author: User;
-  /** There message's data. */
-  message: MessageCreate;
-}
-/** The SessionCreate payload.
-
-This is used to authenticate a user and obtain a token to interface with the API.
-
------
-
-### Example
-
-```json
-{
-  "identifier": "yendri",
-  "password": "authentícame por favor",
-  "platform": "linux",
-  "client": "pilfer"
-}
-``` */
-export interface SessionCreate {
-  /** The session user's identifier. This can be either their email or username. */
-  identifier: string;
-  /** The session user's password. */
-  password: string;
-  /** The session's platform (linux, windows, mac, etc.) */
-  platform: string;
-  /** The client the session was created by. */
-  client: string;
-}
-/** Represents a single rate limit for Effis.
-
------
-
-### Example
-
-```json
-{
-  "reset_after": 60,
-  "limit": 5,
-  "file_size_limit": 30000000
-}
-``` */
-export interface EffisRateLimitConf {
-  /** The amount of seconds after which the rate limit resets. */
-  reset_after: number;
-  /** The amount of requests that can be made within the `reset_after` interval. */
-  limit: number;
-  /** The maximum amount of bytes that can be sent within the `reset_after` interval. */
-  file_size_limit: number;
-}
+export type ServerPayload =
+  | ServerPayloadPong
+  | ServerPayloadRateLimit
+  | ServerPayloadHello
+  | ServerPayloadAuthenticated
+  | ServerPayloadUserUpdate
+  | ServerPayloadPresenceUpdate
+  | ServerPayloadMessageCreate;
 /** The error when the client is missing authorization. This error often occurs when the user
 doesn't pass in the required authentication or passes in invalid credentials.
 
@@ -391,16 +768,7 @@ export interface ErrorResponseServer extends SharedErrorData {
   /** Extra information about what went wrong. */
   info: string;
 }
-
-export interface StatusTypeOnline {}
-
-export interface StatusTypeOffline {}
-
-export interface StatusTypeIdle {}
-
-export interface StatusTypeBusy {}
-/** The UpdateUser payload. Any field set to `null`, `undefined` or is missing will be disregarded
-and won't affect the user.
+/** Rate limits that apply to Oprish (The REST API).
 
 -----
 
@@ -408,289 +776,48 @@ and won't affect the user.
 
 ```json
 {
-  "password": "authentícame por favor",
-  "username": "yendli",
-  "email": "yendli2@yemail.yom"
-}
-``` */
-export interface UpdateUser {
-  /** The user's current password for validation. */
-  password: string;
-  /** The user's new username. */
-  username?: string | null;
-  /** The user's new email. */
-  email?: string | null;
-  /** The user's new password. */
-  new_password?: string | null;
-}
-/** Represents all rate limits that apply to the connected Eludris instance.
-
------
-
-### Example
-```json
-{
-  "oprish": {
-    "info": {
-      "reset_after": 5,
-      "limit": 2
-    },
-    "message_create": {
-      "reset_after": 5,
-      "limit": 10
-    },
-    "rate_limits": {
-      "reset_after": 5,
-      "limit": 2
-    }
+  "get_instance_info": {
+    "reset_after": 5,
+    "limit": 2
   },
-  "pandemonium": {
-    "reset_after": 10,
-    "limit": 5
+  "create_message": {
+    "reset_after": 5,
+    "limit": 10
   },
-  "effis": {
-    "assets": {
-      "reset_after": 60,
-      "limit": 5,
-      "file_size_limit": 30000000
-    },
-    "attachments": {
-      "reset_after": 180,
-      "limit": 20,
-      "file_size_limit": 500000000
-    },
-    "fetch_file": {
-      "reset_after": 60,
-      "limit": 30
-    }
-  }
+  "create_user": {
+  },
 }
 ``` */
-export interface InstanceRateLimits {
-  /** The instance's Oprish rate limit information (The REST API). */
-  oprish: OprishRateLimits;
-  /** The instance's Pandemonium rate limit information (The WebSocket API). */
-  pandemonium: RateLimitConf;
-  /** The instance's Effis rate limit information (The CDN). */
-  effis: EffisRateLimits;
-}
-/** A temporary way to mask the message's author's name and avatar. This is mainly used for
-bridging and will be removed when webhooks are officially supported.
-
------
-
-### Example
-
-```json
-{
-  "name": "Jeff",
-  "avatar": "https://some-u.rl/to/some-image.png"
-}
-``` */
-export interface MessageDisguise {
-  /** The name of the message's disguise. */
-  name: string | null;
-  /** The URL of the message's disguise. */
-  avatar: string | null;
-}
-/** The CreatePasswordResetCode payload. This is used when a user wants to generate a code
-to reset their password, most commonly because they forgot their old one.
-
------
-
-### Example
-
-```json
-{
-  "email": "someemail@ma.il"
-}
-``` */
-export interface CreatePasswordResetCode {
-  /** The user's email. */
-  email: string;
-}
-/** The ResetPassword payload. This is used when the user wants to reset their password using a
-password reset code.
-
------
-
-### Example
-
-```json
-{
-  "code": 234567,
-  "email": "someemail@ma.il",
-  "password": "wow such security"
-}
-``` */
-export interface ResetPassword {
-  /** The password reset code the user got emailed. */
-  code: number;
-  /** The user's email. */
-  email: string;
-  /** The user's new password. */
-  password: string;
-}
-/** The UpdateUserProfile payload. This payload is used to update a user's profile. The abscence of a
-field or it being `undefined` means that it won't have an effect. Explicitly setting a field as
-`null` will clear it.
-
------
-
-### Example
-
-```json
-{
-  "display_name": "HappyRu",
-  "bio": "I am very happy!"
-}
-``` */
-export interface UpdateUserProfile {
-  /** The user's new display name. This field has to be between 2 and 32 characters long. */
-  display_name?: string | null | null;
-  /** The user's new status. This field cannot be more than 150 characters long. */
-  status?: string | null | null;
-  /** The user's new status type. This must be one of `ONLINE`, `OFFLINE`, `IDLE` and `BUSY`. */
-  status_type?: StatusType | null;
-  /** The user's new bio. The upper limit is the instance's {@link InstanceInfo} `bio_limit`. */
-  bio?: string | null | null;
-  /** The user's new avatar. This field has to be a valid file ID in the "avatar" bucket. */
-  avatar?: number | null | null;
-  /** The user's new banner. This field has to be a valid file ID in the "banner" bucket. */
-  banner?: number | null | null;
-}
-/** Represents information about the connected Eludris instance.
-
------
-
-### Example
-
-```json
-{
-  "instance_name": "eludris",
-  "description": "The *almost* official Eludris instance - ooliver.",
-  "version": "0.3.2",
-  "message_limit": 2000,
-  "oprish_url": "https://api.eludris.gay",
-  "pandemonium_url": "wss://ws.eludris.gay/",
-  "effis_url": "https://cdn.eludris.gay",
-  "file_size": 20000000,
-  "attachment_file_size": 25000000,
-  "rate_limits": {
-    "oprish": {
-      "info": {
-        "reset_after": 5,
-        "limit": 2
-      },
-      "message_create": {
-        "reset_after": 5,
-        "limit": 10
-      },
-      "rate_limits": {
-        "reset_after": 5,
-        "limit": 2
-      }
-    },
-    "pandemonium": {
-      "reset_after": 10,
-      "limit": 5
-    },
-    "effis": {
-      "assets": {
-        "reset_after": 60,
-        "limit": 5,
-        "file_size_limit": 30000000
-      },
-      "attachments": {
-        "reset_after": 180,
-        "limit": 20,
-        "file_size_limit": 500000000
-      },
-      "fetch_file": {
-        "reset_after": 60,
-        "limit": 30
-      }
-    }
-  }
-}
-``` */
-export interface InstanceInfo {
-  /** The instance's name. */
-  instance_name: string;
-  /** The instance's description.
-
-  This is between 1 and 2048 characters long. */
-  description: string | null;
-  /** The instance's Eludris version. */
-  version: string;
-  /** The maximum length of a message's content. */
-  message_limit: number;
-  /** The URL of the instance's Oprish (REST API) endpoint. */
-  oprish_url: string;
-  /** The URL of the instance's Pandemonium (WebSocket API) endpoint. */
-  pandemonium_url: string;
-  /** The URL of the instance's Effis (CDN) endpoint. */
-  effis_url: string;
-  /** The maximum file size (in bytes) of an asset. */
-  file_size: number;
-  /** The maximum file size (in bytes) of an attachment. */
-  attachment_file_size: number;
-  /** The instance's email address if any. */
-  email_address?: string | null;
-  /** The rate limits that apply to the connected Eludris instance.
-
-  This is not present if the `rate_limits` query parameter is not set. */
-  rate_limits?: InstanceRateLimits | null;
-}
-/** The response to a {@link SessionCreate}.
-
------
-
-### Example
-
-```json
-{
-  "token": "",
-  "session": {
-    "indentifier": "yendri",
-    "password": "authentícame por favor",
-    "platform": "linux",
-    "client": "pilfer"
-  }
-}
-``` */
-export interface SessionCreated {
-  /** The session's token. This can be used by the user to properly interface with the API. */
-  token: string;
-  /** The session object that was created. */
-  session: Session;
-}
-export type FileMetadata =
-  | FileMetadataText
-  | FileMetadataImage
-  | FileMetadataVideo
-  | FileMetadataOther;
-/** The DeleteCredentials payload. This is used in multiple places in the API to provide extra
-credentials for deleting important user-related stuff.
-
------
-
-### Example
-
-```json
-{
-  "password": "wowsuchpassword"
-}
-``` */
-export interface PasswordDeleteCredentials {
-  password: string;
-}
-/** Shared fields between all error response variants. */
-export interface SharedErrorData {
-  /** The HTTP status of the error. */
-  status: number;
-  /** A brief explanation of the error. */
-  message: string;
+export interface OprishRateLimits {
+  /** Rate limits for the {@link get_instance_info} endpoint. */
+  get_instance_info: RateLimitConf;
+  /** Rate limits for the {@link create_message} endpoint. */
+  create_message: RateLimitConf;
+  /** Rate limits for the {@link create_user} endpoint. */
+  create_user: RateLimitConf;
+  /** Rate limits for the {@link verify_user} endpoint. */
+  verify_user: RateLimitConf;
+  /** Rate limits for the {@link get_self}, {@link get_user} and {@link get_user_from_username} endpoints. */
+  get_user: RateLimitConf;
+  /** Rate limits for the {@link get_self}, {@link get_user} and {@link get_user_from_username} endpoints for
+someone who hasn't made an account. */
+  guest_get_user: RateLimitConf;
+  /** Rate limits for the {@link update_user} enpoint. */
+  update_user: RateLimitConf;
+  /** Rate limits for the {@link update_profile} enpoint. */
+  update_profile: RateLimitConf;
+  /** Rate limits for the {@link delete_user} enpoint. */
+  delete_user: RateLimitConf;
+  /** Rate limits for the {@link create_password_reset_code} enpoint. */
+  create_password_reset_code: RateLimitConf;
+  /** Rate limits for the {@link reset_password} enpoint. */
+  reset_password: RateLimitConf;
+  /** Rate limits for the {@link create_session} endpoint. */
+  create_session: RateLimitConf;
+  /** Rate limits for the {@link get_sessions} endpoint. */
+  get_sessions: RateLimitConf;
+  /** Rate limits for the {@link delete_session} endpoint. */
+  delete_session: RateLimitConf;
 }
 /** Rate limits that apply to Effis (The CDN).
 
@@ -773,135 +900,6 @@ export interface User {
   /** The user's verification status. This is only shown when the user queries their own data. */
   verified?: boolean | null;
 }
-/** Rate limits that apply to Oprish (The REST API).
-
------
-
-### Example
-
-```json
-{
-  "get_instance_info": {
-    "reset_after": 5,
-    "limit": 2
-  },
-  "create_message": {
-    "reset_after": 5,
-    "limit": 10
-  },
-  "create_user": {
-  },
-}
-``` */
-export interface OprishRateLimits {
-  /** Rate limits for the {@link get_instance_info} endpoint. */
-  get_instance_info: RateLimitConf;
-  /** Rate limits for the {@link create_message} endpoint. */
-  create_message: RateLimitConf;
-  /** Rate limits for the {@link create_user} endpoint. */
-  create_user: RateLimitConf;
-  /** Rate limits for the {@link verify_user} endpoint. */
-  verify_user: RateLimitConf;
-  /** Rate limits for the {@link get_self}, {@link get_user} and {@link get_user_from_username} endpoints. */
-  get_user: RateLimitConf;
-  /** Rate limits for the {@link get_self}, {@link get_user} and {@link get_user_from_username} endpoints for
-  someone who hasn't made an account. */
-  guest_get_user: RateLimitConf;
-  /** Rate limits for the {@link update_user} enpoint. */
-  update_user: RateLimitConf;
-  /** Rate limits for the {@link update_profile} enpoint. */
-  update_profile: RateLimitConf;
-  /** Rate limits for the {@link delete_user} enpoint. */
-  delete_user: RateLimitConf;
-  /** Rate limits for the {@link create_password_reset_code} enpoint. */
-  create_password_reset_code: RateLimitConf;
-  /** Rate limits for the {@link reset_password} enpoint. */
-  reset_password: RateLimitConf;
-  /** Rate limits for the {@link create_session} endpoint. */
-  create_session: RateLimitConf;
-  /** Rate limits for the {@link get_sessions} endpoint. */
-  get_sessions: RateLimitConf;
-  /** Rate limits for the {@link delete_session} endpoint. */
-  delete_session: RateLimitConf;
-}
-/** Represents a file stored on Effis.
-
------
-
-### Example
-
-```json
-{
-  "id": 2195354353667,
-  "name": "das_ding.png",
-  "bucket": "attachments",
-  "metadata": {
-    "type": "IMAGE",
-    "width": 1600,
-    "height": 1600
-  }
-}
-``` */
-export interface FileData {
-  /** The file's ID. */
-  id: number;
-  /** The file's name. */
-  name: string;
-  /** The bucket the file is stored in. */
-  bucket: string;
-  /** Whether the file is marked as a spoiler. */
-  spoiler?: boolean;
-  /** The {@link FileMetadata} of the file. */
-  metadata: FileMetadata;
-}
-/** A user's status.
-
------
-
-### Example
-
-```json
-{
-  "type": "BUSY",
-  "text": "ayúdame por favor",
-}
-``` */
-export interface Status {
-  type: StatusType;
-  text?: string | null;
-}
-
-export interface FileMetadataText {
-  type: "Text";
-}
-
-export interface FileMetadataImage {
-  type: "Image";
-  /** The image's width in pixels. */
-  width?: number | null;
-  /** The image's height in pixels. */
-  height?: number | null;
-}
-
-export interface FileMetadataVideo {
-  type: "Video";
-  /** The video's width in pixels. */
-  width?: number | null;
-  /** The video's height in pixels. */
-  height?: number | null;
-}
-
-export interface FileMetadataOther {
-  type: "Other";
-}
-export type ServerPayload =
-  | ServerPayloadPong
-  | ServerPayloadRateLimit
-  | ServerPayloadHello
-  | ServerPayloadAuthenticated
-  | ServerPayloadUserUpdate
-  | ServerPayloadPresenceUpdate
-  | ServerPayloadMessageCreate;
 /** A {@link ClientPayload} `PING` payload response.
 
 -----
@@ -935,8 +933,10 @@ otherwise they are disconnected.
 ``` */
 export interface ServerPayloadRateLimit {
   op: "RATE_LIMIT";
-  /** The amount of milliseconds you have to wait before the rate limit ends */
-  wait: number;
+  d: {
+    /** The amount of milliseconds you have to wait before the rate limit ends */
+    wait: number;
+  };
 }
 /** The payload sent by the server when you initiate a new gateway connection.
 
@@ -969,15 +969,17 @@ export interface ServerPayloadRateLimit {
 ``` */
 export interface ServerPayloadHello {
   op: "HELLO";
-  /** The amount of milliseconds your ping interval is supposed to be. */
-  heartbeat_interval: number;
-  /** The instance's info.
+  d: {
+    /** The amount of milliseconds your ping interval is supposed to be. */
+    heartbeat_interval: number;
+    /** The instance's info.
 
 This is the same payload you get from the {@link get_instance_info} payload without
 ratelimits */
-  instance_info: InstanceInfo;
-  /** The pandemonium ratelimit info. */
-  rate_limit: RateLimitConf;
+    instance_info: InstanceInfo;
+    /** The pandemonium ratelimit info. */
+    rate_limit: RateLimitConf;
+  };
 }
 /** The payload sent when the client has successfully authenticated. This contains the data the
 user needs on startup.
@@ -1009,9 +1011,11 @@ user needs on startup.
 ``` */
 export interface ServerPayloadAuthenticated {
   op: "AUTHENTICATED";
-  user: User;
-  /** The currently online users who are relavent to the connector. */
-  users: User[];
+  d: {
+    user: User;
+    /** The currently online users who are relavent to the connector. */
+    users: User[];
+  };
 }
 /** The payload received when a user updates themselves. This includes both user updates from
 the {@link update_user} endpoint and profile updates from the {@link update_profile} endpoint.
@@ -1052,8 +1056,10 @@ This is mainly used for when a user goes offline or online.
 ``` */
 export interface ServerPayloadPresenceUpdate {
   op: "PRESENCE_UPDATE";
-  user_id: number;
-  status: Status;
+  d: {
+    user_id: number;
+    status: Status;
+  };
 }
 /** The payload sent when the client receives a {@link Message}.
 
