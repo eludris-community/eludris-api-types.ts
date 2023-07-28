@@ -1,19 +1,28 @@
-import { FileHandle, open } from "fs/promises";
+import { open, stat } from "fs/promises";
+import { createInterface } from "readline/promises";
 import {
-  StructInfo,
-  ItemInfo,
+  CodeBlockWriter,
+  Project,
+  Scope,
+  SourceFile,
+  StructureKind,
+} from "ts-morph";
+import {
   EnumInfo,
+  Item,
+  ItemInfo,
+  ItemType,
   RouteInfo,
-  FieldInfo,
+  StructInfo,
   VariantType,
-  EnumVariant,
 } from "./types";
 import { argv } from "process";
-import { existsSync } from "fs";
-import { createInterface } from "readline/promises";
+
+main(argv[2], argv[3]);
 
 const converters: Map<RegExp, (str: string) => string> = new Map([
   [/^String$/, (_) => "string"],
+  [/^str$/, (_) => "string"],
   [/^(u|i)(size|\d\d)$/, (str) => "number"],
   [
     /^Option<.+>/,
@@ -26,6 +35,15 @@ const converters: Map<RegExp, (str: string) => string> = new Map([
   [/^Vec<.*>/, (str) => convertType(str.replace(/^Vec<(.+)>$/, "$1[]"))],
 ]);
 
+function convertType(type: string): string {
+  for (const [regex, converter] of converters) {
+    if (regex.test(type)) {
+      return converter(type);
+    }
+  }
+  return type;
+}
+
 function switchCase(content: string, newCase: string | null): string {
   if (newCase == "SCREAMING_SNAKE_CASE") {
     return content.replace(/(\S)([A-Z])/gm, "$1_$2").toUpperCase();
@@ -33,178 +51,13 @@ function switchCase(content: string, newCase: string | null): string {
   return content;
 }
 
-function convertDoc(doc: string) {
-  return doc.replace(/\[`(.+?)`\]/g, "{@link $1}");
-}
-
-function convertType(type: string): string {
-  for (const [regex, converter] of converters) {
-    if (regex.test(type)) {
-      console.debug(`[DEBUG] Converting ${type} to ${converter(type)}`);
-      return converter(type);
-    }
-  }
-  return type;
-}
-
-function indent(str: string, spaces: number) {
-  return str
-    .split("\n")
-    .map((line) => (line === "" ? "" : " ".repeat(spaces) + line))
-    .join("\n");
-}
-
-function fieldToType(field: FieldInfo): string {
-  let doc = "";
-  if (field.doc) {
-    doc = `/** ${convertDoc(field.doc)} */\n`;
-  }
-  return `${doc}${field.name}${field.ommitable ? "?" : ""}: ${convertType(
-    field.field_type
-  )}`;
-}
-
-function handleRoute(route: ItemInfo<RouteInfo>, routes: string[]) {
-  let doc = "";
-  if (route.doc) {
-    doc = `/** ${convertDoc(route.doc)} */\n`;
-  }
-  const camelCaseName = route.name.replace(
-    /_(\w)/g,
-    (match: string, p1: string) => p1.toUpperCase()
-  );
-  routes.push(
-    `${doc}export const ${camelCaseName} = () => ${route.item.route}`
-  );
-}
-
-async function buildTypes(fh: FileHandle, typeUrl: string, routes: string[]) {
-  console.log(`[INFO] Building types for ${typeUrl}`);
-  const type = await (await fetch(typeUrl)).json();
-  if (type.item.type === "struct") {
-    handleStruct(fh, type);
-  } else if (type.item.type === "enum") {
-    handleEnum(fh, type);
-  } else if (type.item.type === "route") {
-    handleRoute(type, routes);
-  } else {
-    console.log(`[WARN] Unknown type ${type.type} for ${typeUrl}`);
-  }
-}
-
-async function handleEnum(fh: FileHandle, info: ItemInfo<EnumInfo>) {
-  await fh.write(
-    `export type ${info.name} = ${
-      info.item.variants.map((v) => `${info.name}${v.name}`).join(" | ") ||
-      "never"
-    }\n`
-  );
-
-  for (const variant of info.item.variants) {
-    handleEnumVariant(fh, variant, info);
-  }
-}
-
-async function handleEnumVariant(
-  fh: FileHandle,
-  variant: EnumVariant,
-  info: ItemInfo<EnumInfo>
-): Promise<string[]> {
-  const { item, name } = info;
-  console.log("content", item.content, variant.name);
-  let typeStr = "";
-  let doc = "";
-  let bases: string[] = [];
-  if (variant.type === VariantType.Unit) {
-    if (item.tag) {
-      if (variant.doc) {
-        doc = `/** ${convertDoc(variant.doc)} */`;
-      }
-      typeStr += `  ${item.tag}: "${switchCase(
-        variant.name,
-        item.rename_all
-      )}"\n`;
-    }
-  } else if (variant.type === VariantType.Tuple) {
-    if (item.tag) {
-      typeStr += `  ${item.tag}: "${switchCase(
-        variant.name,
-        item.rename_all
-      )}"\n`;
-      if (variant.doc) {
-        doc += `  /** ${convertDoc(variant.doc)} */`;
-      }
-      if (item.content) {
-        typeStr += `  ${item.content}: ${convertType(variant.field_type)}\n`;
-      }
-    }
-  } else if (variant.type === VariantType.Struct) {
-    if (!item.tag) {
-      return [];
-    }
-    if (variant.doc) {
-      doc = `/** ${convertDoc(variant.doc)} */`;
-    }
-    typeStr += `  ${item.tag}: "${switchCase(
-      variant.name,
-      item.rename_all
-    )}"\n`;
-
-    if (item.content) {
-      typeStr += `  ${item.content}: {\n`;
-    }
-    for (const field of variant.fields) {
-      if (field.flattened) {
-        bases.push(convertType(field.field_type));
-      } else {
-        typeStr += fieldToType(field) + "\n";
-      }
-    }
-    if (item.content) {
-      typeStr += "  }\n";
-    }
-  }
-  typeStr += "}";
-  let basesStr = bases.join(", ");
-  if (basesStr) {
-    basesStr = ` extends ${basesStr}`;
-  }
-
-  typeStr =
-    `${doc}\nexport interface ${name}${variant.name}${basesStr} {\n` + typeStr;
-  await fh.write(typeStr + "\n");
-
-  return bases;
-}
-
-async function handleStruct(fh: FileHandle, info: ItemInfo<StructInfo>) {
-  let doc = "";
-  if (info.doc) {
-    doc = `/** ${convertDoc(info.doc)} */\n`;
-  }
-  let bases: string[] = [];
-  let typeStr = '{\n';
-  for (const field of info.item.fields) {
-    if (field.flattened) {
-      bases.push(convertType(field.field_type));
-    } else {
-      typeStr += fieldToType(field) + "\n";
-    }
-  }
-
-  await fh.write(`${doc}export interface ${info.name}${ bases.length ? " extends" : "" } ${bases.join(", ")} ${typeStr}}\n`);
-}
-
 async function main(inventoryIndex: string, output: string) {
-  let routes: string[] = [];
-
   const inventory: {
     version: string;
     items: string[];
   } = await (await fetch(`${inventoryIndex}/index.json`)).json();
-  console.log(inventory);
 
-  if (existsSync(`${output}/v${inventory["version"]}.ts`)) {
+  if (await stat(`${output}/v${inventory["version"]}.ts`)) {
     console.log(
       `[INFO] v${inventory["version"]}.ts already exists, do you want to overwrite it?`
     );
@@ -219,16 +72,236 @@ async function main(inventoryIndex: string, output: string) {
     }
   }
 
-  let fh = await open(`${output}/v${inventory["version"]}.ts`, "w");
-  await fh.write("// This file was @generated by typegen\n");
+  const project = new Project();
+  const sourceFile = project.createSourceFile(
+    `${output}/v${inventory["version"]}.ts`,
+    undefined,
+    {
+      overwrite: true,
+    }
+  );
 
-  await Promise.all(
-    inventory.items.map((url) => {
-      buildTypes(fh, `${inventoryIndex}/${url}`, routes);
+  let items: ItemInfo[] = await Promise.all(
+    inventory.items.sort().map(async (url) => {
+      const response = await fetch(`${inventoryIndex}/${url}`);
+      return await response.json();
     })
   );
 
-  await fh.write(routes.join("\n"));
+  const builder = new Builder(sourceFile, items);
+  builder.buildTypes();
+
+  sourceFile.formatText({
+    indentSize: 2,
+    convertTabsToSpaces: true,
+    ensureNewLineAtEndOfFile: true,
+  });
+
+  sourceFile.organizeImports();
+  await sourceFile.save();
+  await project.save();
 }
 
-main(argv[2], argv[3]);
+class Builder {
+  sourceFile: SourceFile;
+  routes: ItemInfo<Item>[] = [];
+  itemInfos: ItemInfo[] = [];
+
+  constructor(sourceFile: SourceFile, itemInfos: ItemInfo[]) {
+    this.sourceFile = sourceFile;
+    this.itemInfos = itemInfos;
+  }
+
+  convertDoc(doc: string) {
+    for (const route of this.routes) {
+      doc = doc.replace(route.name, convertToCamelCase(route.name));
+    }
+    return doc.replace(/\[`(.+?)`\]/g, "{@link $1}");
+  }
+
+  buildTypes() {
+    for (const itemInfo of this.itemInfos) {
+      if (itemInfo.item.type === ItemType.Route) {
+        this.routes.push(itemInfo);
+      }
+    }
+
+    for (const itemInfo of this.itemInfos) {
+      if (itemInfo.item.type === ItemType.Struct) {
+        this.handleStruct(itemInfo as ItemInfo<StructInfo>);
+      } else if (itemInfo.item.type === ItemType.Enum) {
+        this.handleEnum(itemInfo as ItemInfo<EnumInfo>);
+      } else if (itemInfo.item.type === ItemType.Route) {
+        this.handleRoute(itemInfo as ItemInfo<RouteInfo>);
+      }
+    }
+
+    this.sourceFile.addStatements((writer) => {
+      writer.writeLine("export const ROUTES = {");
+      for (const route of this.routes) {
+        //docs
+        writer.writeLine(`/**`);
+        let doc = " * " + this.convertDoc(route.doc).split("\n").join("\n * ")
+        doc = doc.replace(/\* \n/g, "*\n")
+        writer.writeLine(doc);
+        writer.writeLine(`*/`);
+
+        writer.writeLine(`${convertToCamelCase(route.name)},`);
+      }
+      writer.writeLine("};");
+    });
+  }
+
+  handleStruct(itemInfo: ItemInfo<StructInfo>) {
+    const { item, name, doc } = itemInfo;
+    const struct = this.sourceFile.addInterface({
+      name,
+      isExported: false,
+      docs: [this.convertDoc(doc)],
+      extends: item.fields.filter((f) => f.flattened).map((f) => f.field_type),
+    });
+    struct.setIsExported(true);
+
+    for (const field of item.fields.filter((f) => !f.flattened)) {
+      const { name, doc, field_type } = field;
+
+      const property = struct.addProperty({
+        name,
+        type: convertType(field_type),
+        hasQuestionToken: field.ommitable,
+      });
+
+      if (doc) {
+        property.addJsDoc(this.convertDoc(doc));
+      }
+    }
+  }
+
+  handleEnum(itemInfo: ItemInfo<EnumInfo>) {
+    const { item, name, doc } = itemInfo;
+    const union = this.sourceFile.addTypeAlias({
+      name,
+      isExported: true,
+      docs: [this.convertDoc(doc)],
+      type: item.variants.map((v) => name + v.name).join(" | "),
+    });
+    union.setIsExported(true);
+
+    for (const variant of item.variants) {
+      const variantInterface = this.sourceFile.addInterface({
+        name: name + variant.name,
+      });
+      variantInterface.setIsExported(true);
+
+      if (variant.type === VariantType.Unit) {
+        const property = variantInterface.addProperty({
+          name: "type",
+          type: switchCase(`"${variant.name}"`, item.rename_all),
+        });
+
+        if (variant.doc) {
+          property.addJsDoc(this.convertDoc(variant.doc));
+        }
+      } else if (variant.type === VariantType.Tuple) {
+        if (!item.tag) {
+          continue;
+        }
+
+        const property = variantInterface.addProperty({
+          name: item.tag,
+          type: switchCase(`"${variant.name}"`, item.rename_all),
+        });
+
+        if (variant.doc) {
+          property.addJsDoc(this.convertDoc(variant.doc));
+        }
+
+        if (item.content) {
+          variantInterface.addProperty({
+            name: item.content,
+            type: convertType(variant.field_type),
+          });
+        }
+      } else if (variant.type === VariantType.Struct) {
+        if (!item.tag) {
+          continue;
+        }
+
+        const property = variantInterface.addProperty({
+          name: item.tag,
+          type: switchCase(`"${variant.name}"`, item.rename_all),
+        });
+
+        if (variant.doc) {
+          property.addJsDoc(this.convertDoc(variant.doc));
+        }
+
+        for (const field of variant.fields) {
+          if (field.flattened) {
+            variantInterface.addExtends(convertType(field.field_type));
+          } else {
+            const property = variantInterface.addProperty({
+              name: field.name,
+              type: convertType(field.field_type),
+              hasQuestionToken: field.ommitable,
+            });
+
+            if (field.doc) {
+              property.addJsDoc(this.convertDoc(field.doc));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  handleRoute(itemInfo: ItemInfo<RouteInfo>) {
+    let params = [
+      {
+        name: "baseUrl",
+        param_type: "string",
+      },
+    ];
+    params = params.concat(itemInfo.item.path_params);
+    params = params.concat(itemInfo.item.query_params);
+    const camelCaseName = itemInfo.name.replace(/_(\w)/g, (_, c) =>
+      c.toUpperCase()
+    );
+
+    const routeFunction = this.sourceFile.addFunction({
+      name: camelCaseName,
+      parameters: params.map((p) => ({
+        name: convertToCamelCase(p.name),
+        type: convertType(p.param_type),
+      })),
+
+      returnType: "string",
+    });
+
+    routeFunction.addStatements((writer) => {
+      writer.write("return `${baseUrl}");
+      const route = itemInfo.item.route.replace(/\/?\??<.+>/g, "");
+      writer.write(`${route}/`);
+
+      for (const pathParam of itemInfo.item.path_params) {
+        const camelCaseParamName = convertToCamelCase(pathParam.name);
+        writer.write(`\${${camelCaseParamName}}/`);
+      }
+
+      if (itemInfo.item.query_params.length > 0) {
+        writer.write("?");
+      }
+
+      let queryParams = itemInfo.item.query_params.map(
+        (p) => `\${${convertToCamelCase(p.name)}}`
+      );
+      writer.write(queryParams.join("&"));
+
+      writer.write("`;");
+    });
+  }
+}
+
+function convertToCamelCase(str: string) {
+  return str.replace(/_(\w)/g, (_, c) => c.toUpperCase());
+}
