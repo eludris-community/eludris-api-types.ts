@@ -28,7 +28,8 @@
   "scripts": {
     "dev": "tsc -w",
     "clean": "rimraf dist",
-    "build": "tsc && find dist -type f -name \"*.js\" | xargs -I {} gen-esm-wrapper {} {}.mjs"
+    "build": "tsc && find dist -type f -name \"*.js\" | xargs -I {} gen-esm-wrapper {} {}.mjs",
+    "docs": "yarn run typedoc"
   },
   "files": [
     "dist"
