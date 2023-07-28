@@ -95,20 +95,21 @@ async function buildTypes(fh: FileHandle, typeUrl: string, routes: string[]) {
 async function handleEnum(fh: FileHandle, info: ItemInfo<EnumInfo>) {
   await fh.write(
     `export type ${info.name} = ${
-      info.item.variants.map((v) => v.name).join(" | ") || "never"
+      info.item.variants.map((v) => `${info.name}${v.name}`).join(" | ") || "never"
     }\n`
   );
 
   for (const variant of info.item.variants) {
-    handleEnumVariant(fh, variant, info.item);
+    handleEnumVariant(fh, variant, info);
   }
 }
 
 async function handleEnumVariant(
   fh: FileHandle,
   variant: EnumVariant,
-  item: EnumInfo
+  info: ItemInfo<EnumInfo>
 ): Promise<string[]> {
+  const {item, name} = info;
   let typeStr = "";
   let doc = "";
   let bases: string[] = [];
@@ -160,7 +161,7 @@ async function handleEnumVariant(
     basesStr = ` extends ${basesStr}`;
   }
 
-  typeStr = `${doc}\nexport interface ${variant.name}${basesStr} {\n` + typeStr;
+  typeStr = `${doc}\nexport interface ${name}${variant.name}${basesStr} {\n` + typeStr;
   await fh.write(typeStr + "\n");
 
   return bases;
