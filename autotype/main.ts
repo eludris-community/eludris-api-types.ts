@@ -1,11 +1,8 @@
-import { open, stat } from "fs/promises";
+import { stat } from "fs/promises";
 import { createInterface } from "readline/promises";
 import {
-  CodeBlockWriter,
   Project,
-  Scope,
   SourceFile,
-  StructureKind,
 } from "ts-morph";
 import {
   EnumInfo,
@@ -16,6 +13,9 @@ import {
   StructInfo,
   VariantType,
 } from "./types";
+
+import { snakeCase } from "lodash";
+
 import { argv } from "process";
 
 main(argv[2], argv[3]);
@@ -26,7 +26,8 @@ const converters: Map<RegExp, (str: string) => string> = new Map([
   [/^(u|i)(size|\d\d)$/, (str) => "number"],
   [
     /^Option<.+>/,
-    (str) => convertType(str.replace(/^Option<(.+)>$/, "$1")) + " | null",
+    (str) =>
+      convertType(str.replace(/^(?:Option<)+([^<>]+)>*$/, "$1")) + " | null",
   ],
   [/^bool$/, (_) => "boolean"],
   [/^TempFile$/, (_) => "unknown"],
@@ -45,8 +46,10 @@ function convertType(type: string): string {
 }
 
 function switchCase(content: string, newCase: string | null): string {
-  if (newCase == "SCREAMING_SNAKE_CASE") {
-    return content.replace(/(\S)([A-Z])/gm, "$1_$2").toUpperCase();
+  if (newCase === "SCREAMING_SNAKE_CASE") {
+    return `"${snakeCase(content).toUpperCase()}"`;
+  } else if (newCase === "UPPERCASE") {
+    return content.toUpperCase();
   }
   return content;
 }
@@ -57,7 +60,14 @@ async function main(inventoryIndex: string, output: string) {
     items: string[];
   } = await (await fetch(`${inventoryIndex}/index.json`)).json();
 
-  if (await stat(`${output}/v${inventory["version"]}.ts`)) {
+  let exists = true;
+  await stat(`${output}/v${inventory["version"]}.ts`, 
+  ).catch(() => {
+    exists = false;
+  });
+
+
+  if (exists) {
     console.log(
       `[INFO] v${inventory["version"]}.ts already exists, do you want to overwrite it?`
     );
@@ -140,11 +150,7 @@ class Builder {
       writer.writeLine("export const ROUTES = {");
       for (const route of this.routes) {
         //docs
-        writer.writeLine(`/**`);
-        let doc = " * " + this.convertDoc(route.doc).split("\n").join("\n * ")
-        doc = doc.replace(/\* \n/g, "*\n")
-        writer.writeLine(doc);
-        writer.writeLine(`*/`);
+        writer.writeLine(formatDocString(route.doc));
 
         writer.writeLine(`${convertToCamelCase(route.name)},`);
       }
@@ -194,13 +200,26 @@ class Builder {
       variantInterface.setIsExported(true);
 
       if (variant.type === VariantType.Unit) {
-        const property = variantInterface.addProperty({
-          name: "type",
-          type: switchCase(`"${variant.name}"`, item.rename_all),
-        });
+        if (item.tag) {
+          const property = variantInterface.addProperty({
+            name: item.tag,
+            type: switchCase(`"${variant.name}"`, item.rename_all),
+          });
 
-        if (variant.doc) {
-          property.addJsDoc(this.convertDoc(variant.doc));
+          if (variant.doc) {
+            property.addJsDoc(this.convertDoc(variant.doc));
+          }
+        } else {
+          variantInterface.remove();
+          const typeAlias = this.sourceFile.addTypeAlias({
+            name: name + variant.name,
+            type: switchCase(`"${variant.name}"`, item.rename_all),
+          });
+          if (variant.doc) {
+            typeAlias.addJsDoc(this.convertDoc(variant.doc));
+          }
+
+          continue;
         }
       } else if (variant.type === VariantType.Tuple) {
         if (!item.tag) {
@@ -235,22 +254,35 @@ class Builder {
         if (variant.doc) {
           property.addJsDoc(this.convertDoc(variant.doc));
         }
+        let toExtend: string[] = [];
+        variantInterface.addMember((writer) => {
+          writer.writeLine(`${item.content}: {`);
+          for (const field of variant.fields) {
+            if (field.flattened) {
+              toExtend.push(convertType(field.field_type));
+            } else {
+              if (field.doc) {
+                writer.writeLine(formatDocString(field.doc));
+              }
 
-        for (const field of variant.fields) {
-          if (field.flattened) {
-            variantInterface.addExtends(convertType(field.field_type));
-          } else {
-            const property = variantInterface.addProperty({
-              name: field.name,
-              type: convertType(field.field_type),
-              hasQuestionToken: field.ommitable,
-            });
+              writer.write(`${field.name}`);
 
-            if (field.doc) {
-              property.addJsDoc(this.convertDoc(field.doc));
+              if (field.ommitable) {
+                writer.write("?");
+              }
+
+              writer.write(": ");
+
+              writer.write(convertType(field.field_type));
+              writer.write(";\n");
             }
           }
+          writer.writeLine("}");
+        });
+        for (const type of toExtend) {
+          variantInterface.addExtends(type);
         }
+
       }
     }
   }
@@ -304,4 +336,9 @@ class Builder {
 
 function convertToCamelCase(str: string) {
   return str.replace(/_(\w)/g, (_, c) => c.toUpperCase());
+}
+
+function formatDocString(doc: string): string {
+  const formattedDoc = " * " + doc.split("\n").join("\n * ").replace(/\* \n/g, "*\n");
+  return `/**\n${formattedDoc}\n */`;
 }

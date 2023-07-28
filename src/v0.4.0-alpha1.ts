@@ -125,7 +125,7 @@ export interface ClientPayloadPing {
    * }
    * ```
    */
-  type: "_PING";
+  op: "PING";
 }
 
 export interface ClientPayloadAuthenticate {
@@ -144,7 +144,7 @@ export interface ClientPayloadAuthenticate {
    * }
    * ```
    */
-  op: "_AUTHENTICATE";
+  op: "AUTHENTICATE";
   d: string;
 }
 
@@ -246,7 +246,9 @@ export interface ErrorResponseUnauthorized extends SharedErrorData {
    * }
    * ```
    */
-  type: "_UNAUTHORIZED";
+  type: "UNAUTHORIZED";
+  null: {
+  }
 }
 
 export interface ErrorResponseForbidden extends SharedErrorData {
@@ -266,7 +268,9 @@ export interface ErrorResponseForbidden extends SharedErrorData {
    * }
    * ```
    */
-  type: "_FORBIDDEN";
+  type: "FORBIDDEN";
+  null: {
+  }
 }
 
 export interface ErrorResponseNotFound extends SharedErrorData {
@@ -285,7 +289,9 @@ export interface ErrorResponseNotFound extends SharedErrorData {
    * }
    * ```
    */
-  type: "_NOT_FOUND";
+  type: "NOT_FOUND";
+  null: {
+  }
 }
 
 export interface ErrorResponseConflict extends SharedErrorData {
@@ -306,9 +312,13 @@ export interface ErrorResponseConflict extends SharedErrorData {
    * }
    * ```
    */
-  type: "_CONFLICT";
-  /** The conflicting item. */
-  item: string;
+  type: "CONFLICT";
+  null: {
+    /**
+     * The conflicting item.
+     */
+    item: string;
+  }
 }
 
 export interface ErrorResponseMisdirected extends SharedErrorData {
@@ -330,9 +340,13 @@ export interface ErrorResponseMisdirected extends SharedErrorData {
    * }
    * ```
    */
-  type: "_MISDIRECTED";
-  /** Extra information about what went wrong. */
-  info: string;
+  type: "MISDIRECTED";
+  null: {
+    /**
+     * Extra information about what went wrong.
+     */
+    info: string;
+  }
 }
 
 export interface ErrorResponseValidation extends SharedErrorData {
@@ -353,11 +367,17 @@ export interface ErrorResponseValidation extends SharedErrorData {
    * }
    * ```
    */
-  type: "_VALIDATION";
-  /** The name of the value that failed validation. */
-  value_name: string;
-  /** Extra information about what went wrong. */
-  info: string;
+  type: "VALIDATION";
+  null: {
+    /**
+     * The name of the value that failed validation.
+     */
+    value_name: string;
+    /**
+     * Extra information about what went wrong.
+     */
+    info: string;
+  }
 }
 
 export interface ErrorResponseRateLimited extends SharedErrorData {
@@ -377,9 +397,13 @@ export interface ErrorResponseRateLimited extends SharedErrorData {
    * }
    * ```
    */
-  type: "_RATE_LIMITED";
-  /** The amount of milliseconds you're still rate limited for. */
-  retry_after: number;
+  type: "RATE_LIMITED";
+  null: {
+    /**
+     * The amount of milliseconds you're still rate limited for.
+     */
+    retry_after: number;
+  }
 }
 
 export interface ErrorResponseServer extends SharedErrorData {
@@ -402,9 +426,13 @@ export interface ErrorResponseServer extends SharedErrorData {
    * }
    * ```
    */
-  type: "_SERVER";
-  /** Extra information about what went wrong. */
-  info: string;
+  type: "SERVER";
+  null: {
+    /**
+     * Extra information about what went wrong.
+     */
+    info: string;
+  }
 }
 
 /**
@@ -469,27 +497,39 @@ export interface FileData {
 export type FileMetadata = FileMetadataText | FileMetadataImage | FileMetadataVideo | FileMetadataOther;
 
 export interface FileMetadataText {
-  type: "Text";
+  type: "TEXT";
 }
 
 export interface FileMetadataImage {
-  type: "Image";
-  /** The image's width in pixels. */
-  width?: number | null;
-  /** The image's height in pixels. */
-  height?: number | null;
+  type: "IMAGE";
+  null: {
+    /**
+     * The image's width in pixels.
+     */
+    width?: number | null;
+    /**
+     * The image's height in pixels.
+     */
+    height?: number | null;
+  }
 }
 
 export interface FileMetadataVideo {
-  type: "Video";
-  /** The video's width in pixels. */
-  width?: number | null;
-  /** The video's height in pixels. */
-  height?: number | null;
+  type: "VIDEO";
+  null: {
+    /**
+     * The video's width in pixels.
+     */
+    width?: number | null;
+    /**
+     * The video's height in pixels.
+     */
+    height?: number | null;
+  }
 }
 
 export interface FileMetadataOther {
-  type: "Other";
+  type: "OTHER";
 }
 
 /**
@@ -866,7 +906,7 @@ export interface ServerPayloadPong {
    * }
    * ```
    */
-  type: "_PONG";
+  op: "PONG";
 }
 
 export interface ServerPayloadRateLimit {
@@ -889,9 +929,13 @@ export interface ServerPayloadRateLimit {
    * }
    * ```
    */
-  op: "_RATE_LIMIT";
-  /** The amount of milliseconds you have to wait before the rate limit ends */
-  wait: number;
+  op: "RATE_LIMIT";
+  d: {
+    /**
+     * The amount of milliseconds you have to wait before the rate limit ends
+     */
+    wait: number;
+  }
 }
 
 export interface ServerPayloadHello {
@@ -926,18 +970,24 @@ export interface ServerPayloadHello {
    * }
    * ```
    */
-  op: "_HELLO";
-  /** The amount of milliseconds your ping interval is supposed to be. */
-  heartbeat_interval: number;
-  /**
-   * The instance's info.
-   *
-   * This is the same payload you get from the {@link getInstanceInfo} payload without
-   * ratelimits
-   */
-  instance_info: InstanceInfo;
-  /** The pandemonium ratelimit info. */
-  rate_limit: RateLimitConf;
+  op: "HELLO";
+  d: {
+    /**
+     * The amount of milliseconds your ping interval is supposed to be.
+     */
+    heartbeat_interval: number;
+    /**
+     * The instance's info.
+     *
+     * This is the same payload you get from the [`get_instance_info`] payload without
+     * ratelimits
+     */
+    instance_info: InstanceInfo;
+    /**
+     * The pandemonium ratelimit info.
+     */
+    rate_limit: RateLimitConf;
+  }
 }
 
 export interface ServerPayloadAuthenticated {
@@ -971,10 +1021,14 @@ export interface ServerPayloadAuthenticated {
    * }
    * ```
    */
-  op: "_AUTHENTICATED";
-  user: User;
-  /** The currently online users who are relavent to the connector. */
-  users: User[];
+  op: "AUTHENTICATED";
+  d: {
+    user: User;
+    /**
+     * The currently online users who are relavent to the connector.
+     */
+    users: User[];
+  }
 }
 
 export interface ServerPayloadUserUpdate {
@@ -996,7 +1050,7 @@ export interface ServerPayloadUserUpdate {
    * }
    * ```
    */
-  op: "_USER_UPDATE";
+  op: "USER_UPDATE";
   d: User;
 }
 
@@ -1020,9 +1074,11 @@ export interface ServerPayloadPresenceUpdate {
    * }
    * ```
    */
-  op: "_PRESENCE_UPDATE";
-  user_id: number;
-  status: Status;
+  op: "PRESENCE_UPDATE";
+  d: {
+    user_id: number;
+    status: Status;
+  }
 }
 
 export interface ServerPayloadMessageCreate {
@@ -1043,7 +1099,7 @@ export interface ServerPayloadMessageCreate {
    * }
    * ```
    */
-  op: "_MESSAGE_CREATE";
+  op: "MESSAGE_CREATE";
   d: Message;
 }
 
@@ -1166,22 +1222,10 @@ export interface Status {
  * This is a string.
  */
 export type StatusType = StatusTypeOnline | StatusTypeOffline | StatusTypeIdle | StatusTypeBusy;
-
-export interface StatusTypeOnline {
-  type: "Online";
-}
-
-export interface StatusTypeOffline {
-  type: "Offline";
-}
-
-export interface StatusTypeIdle {
-  type: "Idle";
-}
-
-export interface StatusTypeBusy {
-  type: "Busy";
-}
+type StatusTypeOnline = "ONLINE";
+type StatusTypeOffline = "OFFLINE";
+type StatusTypeIdle = "IDLE";
+type StatusTypeBusy = "BUSY";
 
 /**
  * The UpdateUser payload. Any field set to `null`, `undefined` or is missing will be disregarded
@@ -1228,17 +1272,17 @@ export interface UpdateUser {
  */
 export interface UpdateUserProfile {
   /** The user's new display name. This field has to be between 2 and 32 characters long. */
-  display_name?: string | null | null;
+  display_name?: string | null;
   /** The user's new status. This field cannot be more than 150 characters long. */
-  status?: string | null | null;
+  status?: string | null;
   /** The user's new status type. This must be one of `ONLINE`, `OFFLINE`, `IDLE` and `BUSY`. */
   status_type?: StatusType | null;
   /** The user's new bio. The upper limit is the instance's {@link InstanceInfo} `bio_limit`. */
-  bio?: string | null | null;
+  bio?: string | null;
   /** The user's new avatar. This field has to be a valid file ID in the "avatar" bucket. */
-  avatar?: number | null | null;
+  avatar?: number | null;
   /** The user's new banner. This field has to be a valid file ID in the "banner" bucket. */
-  banner?: number | null | null;
+  banner?: number | null;
 }
 
 /**
@@ -1327,10 +1371,10 @@ export interface UserCreate {
 export const ROUTES = {
   /**
    * Get an attachment by ID.
-   * This is a shortcut to {@link downloadFile} with the attachments bucket.
+   * This is a shortcut to [`download_file`] with the attachments bucket.
    *
    * The `Content-Deposition` header is set to `attachment`.
-   * Use the {@link getAttachment} endpoint to get `Content-Deposition` set to `inline`.
+   * Use the [`get_attachment`] endpoint to get `Content-Deposition` set to `inline`.
    *
    * -----
    *
@@ -1341,13 +1385,13 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   downloadAttachment,
   /**
    * Download a file by ID from a specific bucket.
    *
    * The `Content-Deposition` header is set to `attachment`.
-   * Use the {@link getFile} endpoint to get `Content-Deposition` set to `inline`.
+   * Use the [`get_file`] endpoint to get `Content-Deposition` set to `inline`.
    *
    * -----
    *
@@ -1358,14 +1402,14 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   downloadFile,
   /**
    * Download a static file by its name.
    * Static files are added by the instance owner and cannot be externally modified.
    *
    * The `Content-Deposition` header is set to `attachment`.
-   * Use the {@link getStaticFile} endpoint to get `Content-Deposition` set to `inline`.
+   * Use the [`get_static_file`] endpoint to get `Content-Deposition` set to `inline`.
    *
    * -----
    *
@@ -1376,14 +1420,14 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   downloadStaticFile,
   /**
    * Get an attachment by ID.
-   * This is a shortcut to {@link getFile} with the attachments bucket.
+   * This is a shortcut to [`get_file`] with the attachments bucket.
    *
    * The `Content-Deposition` header is set to `inline`.
-   * Use the {@link downloadAttachment} endpoint to get `Content-Deposition` set to `attachment`.
+   * Use the [`download_attachment`] endpoint to get `Content-Deposition` set to `attachment`.
    *
    * -----
    *
@@ -1394,7 +1438,7 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   getAttachment,
   /**
    * Get a file's metadata by ID from a specific bucket.
@@ -1418,13 +1462,13 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   getAttachmentData,
   /**
    * Get a file by ID from a specific bucket.
    *
    * The `Content-Deposition` header is set to `inline`.
-   * Use the {@link downloadFile} endpoint to get `Content-Deposition` set to `attachment`.
+   * Use the [`download_file`] endpoint to get `Content-Deposition` set to `attachment`.
    *
    * -----
    *
@@ -1435,7 +1479,7 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   getFile,
   /**
    * Get a file's metadata by ID from a specific bucket.
@@ -1460,14 +1504,14 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   getFileData,
   /**
    * Get a static file by its name.
    * Static files are added by the instance owner and cannot be externally modified.
    *
    * The `Content-Deposition` header is set to `inline`.
-   * Use the {@link downloadStaticFile} endpoint to get `Content-Deposition` set to `attachment`.
+   * Use the [`download_static_file`] endpoint to get `Content-Deposition` set to `attachment`.
    *
    * -----
    *
@@ -1478,11 +1522,11 @@ export const ROUTES = {
    *
    * <raw file data>
    * ```
-  */
+   */
   getStaticFile,
   /**
    * Upload an attachment to Effis under a specific bucket.
-   * This is a shortcut to {@link uploadFile} with the attachments bucket.
+   * This is a shortcut to [`upload_file`] with the attachments bucket.
    *
    * -----
    *
@@ -1505,7 +1549,7 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   uploadAttachment,
   /**
    * Upload a file to Effis under a specific bucket.
@@ -1533,7 +1577,7 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   uploadFile,
   /**
    * Post a message to Eludris.
@@ -1552,7 +1596,7 @@ export const ROUTES = {
    *   "content": "Hello, World!"
    * }
    * ```
-  */
+   */
   createMessage,
   /**
    * Send a password reset code to your email.
@@ -1566,7 +1610,7 @@ export const ROUTES = {
    *   --json '{"email": "yendri@llamoyendri.io"}' \
    *   https://api.eludris.gay/users/reset-password
    * ```
-  */
+   */
   createPasswordResetCode,
   /**
    * Create a new session.
@@ -1596,7 +1640,7 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   createSession,
   /**
    * Create a new user.
@@ -1622,7 +1666,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   createUser,
   /**
    * Delete a session.
@@ -1637,7 +1681,7 @@ export const ROUTES = {
    *   -H "Authorization: <token>" \
    *   https://api.eludris.gay/sessions/2342734331909
    * ```
-  */
+   */
   deleteSession,
   /**
    * Delete your user.
@@ -1653,7 +1697,7 @@ export const ROUTES = {
    *   --json '{"password": "wowsuchpassword"}'
    *   https://api.eludris.gay/users
    * ```
-  */
+   */
   deleteUser,
   /**
    * Get information about the instance you're sending this request to.
@@ -1711,7 +1755,7 @@ export const ROUTES = {
    *   }
    * }
    * ```
-  */
+   */
   getInstanceInfo,
   /**
    * Get your own user.
@@ -1733,7 +1777,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   getSelf,
   /**
    * Get all sessions.
@@ -1764,7 +1808,7 @@ export const ROUTES = {
    *   }
    * ]
    * ```
-  */
+   */
   getSessions,
   /**
    * Get a user by ID.
@@ -1789,7 +1833,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   getUser,
   /**
    * Get a user by their username.
@@ -1814,7 +1858,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   getUserWithUsername,
   /**
    * Reset your password using the password reset code.
@@ -1829,7 +1873,7 @@ export const ROUTES = {
    *   --json '{"code":234567,"email":"someemail@ma.il","password":"wow such security"}' \
    *   https://api.eludris.gay/users/reset-password
    * ```
-  */
+   */
   resetPassword,
   /**
    * Modify your profile.
@@ -1855,7 +1899,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   updateProfile,
   /**
    * Modify your user account.
@@ -1881,7 +1925,7 @@ export const ROUTES = {
    *   "permissions": 0
    * }
    * ```
-  */
+   */
   updateUser,
   /**
    * Verify your email address.
@@ -1896,7 +1940,7 @@ export const ROUTES = {
    *   -H "Authorization: <token>" \
    *   https://api.eludris.gay/users/verify?code=123456
    * ```
-  */
+   */
   verifyUser,
 };
 
