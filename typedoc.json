@@ -6,5 +6,6 @@
   "theme": "my-theme",
   "name": "eludris-api-types",
   "readme": "./README.md",
+  "json": "./docs/api.json",
   "hideGenerator": true
 }
