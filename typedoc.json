@@ -1,0 +1,11 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/*"],
+  "out": "./docs",
+  "plugin": ["@mxssfd/typedoc-theme"],
+  "theme": "my-theme",
+  "name": "eludris-api-types",
+  "readme": "./README.md",
+  "json": "./docs/api.json",
+  "hideGenerator": true
+}
